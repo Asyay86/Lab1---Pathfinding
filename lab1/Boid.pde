@@ -24,6 +24,8 @@ class Boid
    float rotational_acceleration;
    KinematicMovement kinematic;
    PVector target;
+   int currentIndex = 0;
+   ArrayList<PVector> waypoints;
    
    Boid(PVector position, float heading, float max_speed, float max_rotational_speed, float acceleration, float rotational_acceleration)
    {
@@ -37,28 +39,46 @@ class Boid
    {
      if (target != null)
      {  
-        // TODO: Implement seek here
-        //this.kinematic.heading = (target.heading() - kinematic.getHeading());
-        PVector desired = PVector.sub(target, kinematic.getPosition());
-        float d = desired.mag();
+        //Implement seek here
         
-        if(d > 10){
-          System.out.println("Not there yet");
+        //Finding the distance between the boid and the target
+        PVector desired = PVector.sub(target, kinematic.getPosition());
+        //Keep the distance in a variable
+        float d = desired.mag();
+        System.out.println("");
+        
+        //Check if the boid is close enough to the target already
+        if(d > 15){
+          //Get only the direction
           desired.normalize();
           
+          //Calculate the angle the boid should be facing and 
+          //Find the difference between current boid angle and desired angle
+          //make sure its between -pi and pi
           float desiredHeading = atan2(desired.y, desired.x);
-          
-          float difference = desiredHeading - this.kinematic.getHeading();
-          
+          float difference = desiredHeading - this.kinematic.getHeading();    
           difference = atan2(sin(difference), cos(difference)); 
           
-          float rSpeed = constrain(difference, -this.kinematic.max_rotational_speed, this.kinematic.max_rotational_speed);
+          if(abs(difference) > HALF_PI){
+            float minimalSpeed = 0.1;
+            this.kinematic.increaseSpeed(minimalSpeed, difference);
+          }
+          else {
+            float rSpeed = constrain(difference, -this.kinematic.max_rotational_speed, this.kinematic.max_rotational_speed);  
+            
+            this.kinematic.increaseSpeed(this.kinematic.max_speed, rSpeed*2);
+          }
           
-          this.kinematic.increaseSpeed(this.kinematic.max_speed, rSpeed);
         }
         else {
+          //Stop the boid when it reaches the destination
           this.kinematic.increaseSpeed(-(this.kinematic.getSpeed()), -(this.kinematic.getRotationalVelocity())); 
-        }
+          
+          if(waypoints != null && currentIndex < waypoints.size() - 1){
+            currentIndex++;
+            this.target = waypoints.get(currentIndex);
+          }
+       }
      }
      
      // place crumbs, do not change     
@@ -74,7 +94,8 @@ class Boid
      this.kinematic.update(dt);
      
      draw();
-   }
+   
+ }
    
    void draw()
    {
@@ -112,7 +133,8 @@ class Boid
    void follow(ArrayList<PVector> waypoints)
    {
       // TODO: change to follow *all* waypoints
-      this.target = waypoints.get(0);
-      
+      this.waypoints = waypoints;
+      this.currentIndex = 0;
+      this.target = waypoints.get(currentIndex);
    }
-}
+ }
