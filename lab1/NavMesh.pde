@@ -49,18 +49,18 @@ class Node{
 }
 
 class NavMesh{   
-   public ArrayList<PVector> ReflexPoints;   //Reflex points that need to be adjusted
-   public ArrayList<Wall> NewWalls;          //Walls that have been added to split polygon
-   public ArrayList<Node> convexPolygons;    //The list of all convex polygons
-   HashMap<Integer, Node> NewWallsMap = new HashMap<Integer, Node>();   //Useful for providing neighbors into each node using the index number
+   public ArrayList<PVector> reflexPoint; 
+   public ArrayList<Wall> wallList;          
+   public ArrayList<Node> convexPolygons;    
+   HashMap<Integer, Node> wallMap = new HashMap<Integer, Node>();  
    
    void bake(Map map){
      //initializing
      ArrayList<Wall> Walls = map.walls;
-     NewWalls = new ArrayList<Wall>();
-     ReflexPoints = new ArrayList<PVector>();         
+     wallList = new ArrayList<Wall>();
+     reflexPoint = new ArrayList<PVector>();         
      convexPolygons = new ArrayList<Node>();
-     NewWallsMap = new HashMap<Integer, Node>(); 
+     wallMap = new HashMap<Integer, Node>(); 
        
      Split(Walls);  //recursively splits the walls
          
@@ -69,15 +69,15 @@ class NavMesh{
        if(convexPolygons.get(i).connections.size() != convexPolygons.get(i).neighbors.size()){  //if they have the same number then every connecting wall should have its     
          for(int j = 0; j < convexPolygons.get(i).connections.size(); j++){  
                
-           if(NewWallsMap.containsKey(convexPolygons.get(i).connections.get(j).getID())){  
-             convexPolygons.get(i).addNeighbor(NewWallsMap.get(convexPolygons.get(i).connections.get(j).getID()));
-             convexPolygons.get(i).addNeighborWall(NewWallsMap.get(convexPolygons.get(i).connections.get(j).getID()), convexPolygons.get(i).connections.get(j));              }
+           if(wallMap.containsKey(convexPolygons.get(i).connections.get(j).getID())){  
+             convexPolygons.get(i).addNeighbor(wallMap.get(convexPolygons.get(i).connections.get(j).getID()));
+             convexPolygons.get(i).addNeighborWall(wallMap.get(convexPolygons.get(i).connections.get(j).getID()), convexPolygons.get(i).connections.get(j));              }
            }                     
          }
        }   
       
      boolean printMap = false;
-     print("\nThe Walls map is: " + NewWallsMap);
+     print("\nThe Walls map is: " + wallMap);
      
     boolean printInfo = false;
     for(int l = 0; l < convexPolygons.size(); l++){
@@ -112,13 +112,13 @@ class NavMesh{
                 convexPolygon.addConnection(wall);
                 int wallID = wall.getID();
                 
-                if (NewWallsMap.containsKey(wallID)) {
-                    Node neighborNode = NewWallsMap.get(wallID);
+                if (wallMap.containsKey(wallID)) {
+                    Node neighborNode = wallMap.get(wallID);
                     convexPolygon.addNeighbor(neighborNode);
                     convexPolygon.addNeighborWall(neighborNode, wall);
-                    NewWallsMap.put(-wallID, convexPolygon);
+                    wallMap.put(-wallID, convexPolygon);
                 } else {
-                    NewWallsMap.put(-wallID, convexPolygon);
+                    wallMap.put(-wallID, convexPolygon);
                 }
             }
         }
@@ -143,12 +143,12 @@ class NavMesh{
 
     // Create walls for splitting
     Wall normalWall = new Wall(reflexPoint, fixPoint);
-    normalWall.setID(NewWalls.size() + 1);
+    normalWall.setID(wallList.size() + 1);
     Wall reverseWall = new Wall(fixPoint, reflexPoint);
-    reverseWall.setID(-NewWalls.size() - 1);
+    reverseWall.setID(-wallList.size() - 1);
     
     // Add the new wall to the list
-    NewWalls.add(normalWall);   
+    wallList.add(normalWall);   
 
     // Split walls into two new polygons
     ArrayList<Wall> frontWalls = new ArrayList<>();
@@ -241,13 +241,12 @@ class NavMesh{
       this.currentNode = currentNode;
       this.parentNode = parentNode;
       this.pathLength = pathLength;
-      // Heuristic: Euclidean distance from current node to target
       this.heuristic = getPVectorDistance(currentNode.center, target);
       this.aValue = pathLength + heuristic;
     }
   }
    
-  //Function to find the most optimal path using A*
+  //Function to find the most optimal path using a*
   ArrayList<PVector> findPath(PVector boidPosition, PVector destinationPosition){
     ArrayList<PVector> path = new ArrayList<PVector>();
     
@@ -284,6 +283,7 @@ class NavMesh{
     }
     
     path.add(destinationPosition);
+    //might combine them all into one, tbd
     print("\n Number of points to travel through: " + path.size());
     return path;  
   }
@@ -291,55 +291,54 @@ class NavMesh{
   //Function to check the point we need to access
   boolean pointContained (PVector point, ArrayList<Wall> polygon){
     int crosses = 0;
-    for (Wall wall : polygon) {
-        if (wall.crosses(point, new PVector(point.x + 2 * width, point.y))) {
-            crosses++;
-        }
+    for(Wall wall: polygon)
+    {
+      if (wall.crosses(point, new PVector(point.x + 2*width, point.y))){
+        crosses ++;
+      }
+    }  
+    if((crosses % 2) == 0){
+      return false;
     }
-    return (crosses % 2 != 0);
+    return true;
   }
    
   //Function to find the proper node path
   ArrayList<Node> findNodePath(Node start, Node destination){
     print("\n Looking for path");
-    ArrayList<frontierNode> frontierList = new ArrayList<>();
-    ArrayList<Node> expandedList = new ArrayList<>();
-    
-    // Initialize frontier with the start node
+    ArrayList<frontierNode> frontierList = new ArrayList<frontierNode>();
+    ArrayList<Node> previouslyExpandedList = new ArrayList<Node>();
+     
+    //Will add a new frontier every time it reaches a frontier.
     frontierList.add(new frontierNode(start, null, 0, destination.center));
 
-    // While frontier exists and destination not found
-    while (frontierList.get(0).currentNode != destination) {
-        frontierNode currentFrontier = frontierList.get(0);
-        Node currentNode = currentFrontier.currentNode;
-        println("\nCurrent node: " + currentNode.center);
-
-        // Add neighbors to the frontier
-        for (Node neighbor : currentNode.neighbors) {
-            float newPath = currentFrontier.pathLength + getPVectorDistance(currentNode.center, neighbor.center);
-            frontierList.add(new frontierNode(neighbor, currentFrontier, newPath, destination.center));
-        }
-
-        expandedList.add(currentNode);
+    //While there are still frontiers, and we're not in the destination, it will keep looking and expanding horizons. It will also remove any older frontiers we've already been to
+    while(frontierList.get(0).currentNode != destination){
+      print("\n The current lowest node is at: " + frontierList.get(0).currentNode.center);
+      for(int i = 0; i < frontierList.get(0).currentNode.neighbors.size(); i++){
+        print("\n Adding Neighbors");
+        float newPath = frontierList.get(0).pathLength + getPVectorDistance(frontierList.get(0).currentNode.center, frontierList.get(0).currentNode.neighbors.get(i).center);
+        frontierList.add(new frontierNode(frontierList.get(0).currentNode.neighbors.get(i), frontierList.get(0), newPath, destination.center));
+      }
+      previouslyExpandedList.add(frontierList.get(0).currentNode);
+      frontierList.remove(0);
+      frontierList.sort(new FrontierCompare());
+      while(previouslyExpandedList.contains(frontierList.get(0).currentNode)){
         frontierList.remove(0);
-        frontierList.sort(new FrontierCompare());
-
-        // Remove already expanded nodes from the frontier
-        while (expandedList.contains(frontierList.get(0).currentNode)) {
-            frontierList.remove(0);
-        }
+      }
+      print("\n Done Sorting");
+   }
+     
+    //Array list for the result. It will return a the optimal list.
+    ArrayList<Node> result = new ArrayList<Node>();
+    result.add(frontierList.get(0).currentNode);
+      
+    frontierNode parentNode = frontierList.get(0).parentNode;
+      
+    while(result.get(0) != start){
+      result.add(0, parentNode.currentNode);
+      parentNode = parentNode.parentNode;
     }
-
-    // Backtrack to form the resulting path
-    ArrayList<Node> result = new ArrayList<>();
-    frontierNode currentNode = frontierList.get(0);
-    result.add(currentNode.currentNode);
-
-    while (currentNode.parentNode != null) {
-        currentNode = currentNode.parentNode;
-        result.add(0, currentNode.currentNode); // Add nodes in reverse order
-    }
-
     return result;
   }
    
@@ -358,6 +357,7 @@ class NavMesh{
     }
   }
    
+   
   void update(float dt)
   {
      draw();     
@@ -367,21 +367,9 @@ class NavMesh{
   {
      /// use this to draw the nav mesh graph
      // Draw reflex points
-    for (PVector point : ReflexPoints) {
+    for (PVector point : reflexPoint) {
         stroke(0, 255, 0);
         circle(point.x, point.y, 20);
-    }
-
-    // Draw walls
-    int blueColor = 255;
-    int redColor = 0;
-
-    if (NewWalls != null) {
-        for (Wall wall : NewWalls) {
-            stroke(redColor, 0, blueColor);
-            blueColor -= 10;
-            redColor += 10;
-        }
     }
 
     // Draw convex polygons and connections
@@ -395,10 +383,6 @@ class NavMesh{
                 stroke(255, 0, 0);
                 line(connection.start.x, connection.start.y, connection.end.x, connection.end.y);
             }
-
-            // Draw polygon boundaries and neighbors
-            stroke(020); // Darker color for boundaries
-            stroke(150); // Light grey for neighbors
         }
     } 
   }
