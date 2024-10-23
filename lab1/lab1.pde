@@ -43,16 +43,23 @@ void mousePressed() {
      }
      else
      {
-        waypoints.add(target);
-        entering_path = false;
-        billy.follow(waypoints);
-     }
+       //add pathing
+       ArrayList<PVector> pathfinding = nm.findPath(waypoints.get(waypoints.size()-1), target);
+       for(int i = 0; i < pathfinding.size(); i++){
+         waypoints.add(pathfinding.get(i));
+       }
+       waypoints.add(target);
+       entering_path = false;
+       billy.follow(waypoints);
+    }
   }
   else if (mouseButton == RIGHT)
   {
-     if (!entering_path)
-        waypoints = new ArrayList<PVector>();
-     waypoints.add(target);
+     if (!entering_path){
+       waypoints = new ArrayList<PVector>();
+       ArrayList<PVector> pathfinding = nm.findPath(billy.kinematic.position, target);
+       waypoints = pathfinding;
+     }
      entering_path = true; 
   }
 }

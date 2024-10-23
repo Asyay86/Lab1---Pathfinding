@@ -13,3 +13,17 @@ float normalize_angle_left_right(float angle)
     while (angle > PI) angle -= TAU;
     return angle;
 }
+
+float get_distance(float current_x, float current_y, float target_x, float target_y){
+ float x_travel = target_x - current_x;
+ float y_travel = target_y - current_y;
+ float total_distance = sqrt(sq(x_travel)  + sq(y_travel));
+ return total_distance;
+}
+
+float getPVectorDistance(PVector start, PVector end){
+ float x_travel = end.x - start.x;
+ float y_travel = end.y - start.y;
+ float total_distance = sqrt(sq(x_travel)  + sq(y_travel));
+ return total_distance;
+}

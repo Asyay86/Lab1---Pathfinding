@@ -45,7 +45,7 @@ class Boid
         PVector desired = PVector.sub(target, kinematic.getPosition());
         //Keep the distance in a variable
         float d = desired.mag();
-        System.out.println("");
+        
         
         //Check if the boid is close enough to the target already
         if(d > 15){
@@ -126,7 +126,9 @@ class Boid
    
    void seek(PVector target)
    {
-      this.target = target;
+      ArrayList<PVector> path = nm.findPath(billy.kinematic.position, target);
+      this.target = path.get(0);
+      this.waypoints = path;
       
    }
    

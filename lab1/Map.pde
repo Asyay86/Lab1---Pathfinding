@@ -6,6 +6,7 @@ class Wall
    PVector normal;
    PVector direction;
    float len;
+   int ID; 
    
    Wall(PVector start, PVector end)
    {
@@ -17,6 +18,13 @@ class Wall
       normal = new PVector(-direction.y, direction.x);
    }
    
+   void setID(int ID){
+     this.ID = ID;
+   }
+   
+   int getID(){
+     return ID;
+   }
    
    boolean crosses(PVector from, PVector to)
    {
@@ -55,6 +63,8 @@ class Wall
    {
       return PVector.mult(PVector.add(start, end), 0.5);
    }
+   
+ 
    
    void draw()
    {
