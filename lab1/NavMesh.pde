@@ -264,7 +264,7 @@ class NavMesh{
       }
     }
     pathList.add(desiredLocation);
-    println("Number of polygons to go through: " + pathList.size());
+    println("Amount of polygons passed: " + pathList.size());
     return pathList;
  }
   
