@@ -60,6 +60,14 @@ void mousePressed() {
        ArrayList<PVector> pathfinding = nm.findPath(billy.kinematic.position, target);
        waypoints = pathfinding;
      }
+     else{
+       print("Adding additional path");
+       ArrayList<PVector> pathfinding = nm.findPath(waypoints.get(waypoints.size()-1), target);
+       for(int i = 0; i < pathfinding.size(); i++){
+         waypoints.add(pathfinding.get(i));
+       }
+     }
+     waypoints.add(target);
      entering_path = true; 
   }
 }

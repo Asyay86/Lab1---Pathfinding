@@ -59,14 +59,16 @@ class Boid
           float difference = desiredHeading - this.kinematic.getHeading();    
           difference = atan2(sin(difference), cos(difference)); 
           
-          if(abs(difference) > HALF_PI){
-            float minimalSpeed = 0.1;
-            this.kinematic.increaseSpeed(minimalSpeed, difference);
+          if(abs(difference) > HALF_PI/2){
+            float rSpeed = constrain(difference, -this.kinematic.max_rotational_speed, this.kinematic.max_rotational_speed);  
+            this.kinematic.increaseSpeed(0, rSpeed);
           }
           else {
+            float approachSpeed = map(d, 15, 100, 0.1, this.kinematic.max_speed);
+            approachSpeed = constrain(approachSpeed, 0, this.kinematic.max_speed);
             float rSpeed = constrain(difference, -this.kinematic.max_rotational_speed, this.kinematic.max_rotational_speed);  
             
-            this.kinematic.increaseSpeed(this.kinematic.max_speed, rSpeed*2);
+            this.kinematic.increaseSpeed(approachSpeed, rSpeed*2);
           }
           
         }
